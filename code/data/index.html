@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>ESP8266</title>
+    <link rel="stylesheet" href="bulma.css">    
+    <style>
+        body {   
+            min-height: 100vh;
+        }
+
+        #file-edit {
+            display:none;
+        }
+
+        .flex {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .flex-child {
+            flex:1;
+        }
+
+        .flex .container {
+            width:100%;
+        }
+
+        #code {
+            width:100%;
+            font-family: "Courier New", Courier, monospace;
+            padding:12px;
+        }
+    </style>
+    <script src="jquery-3.2.1.min.js"></script>
+</head>
+
+<body class="flex">   
+
+    <section class="hero is-primary">
+        <div class="hero-body">
+            <div class="container">
+                <h1 class="title">
+                    ESP8266
+                </h1>
+                <h2 class="subtitle">
+                    Instellingen voor het display
+                </h2>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" id="settings">
+
+        <div class="container">
+
+            <div class="field">
+                <label class="label">SSID:</label>
+                <div class="control">
+                    <input class="input" type="text" id="ssid" placeholder="SSID">
+                </div>
+            </div>
+
+            <div class="field" style="margin-bottom:36px;">
+                <label class="label">Password:</label>
+                <div class="control">
+                    <input class="input" type="text" id="password" placeholder="Password">
+                </div>
+            </div>
+
+            <div class="field is-grouped">
+                <div class="control">
+                    <button id="submit_button" class="button is-info">Save settings</button>
+                </div>
+                <div class="control">
+                    <button id="reset_button" class="button is-danger">Reset device</button>
+                </div>
+            </div>
+
+        </div>
+
+    </section>
+
+    <section id="file-list" class="section">
+
+        <div class="container">
+            <div class="columns">
+
+                <div class="column" style="margin-bottom:32px;">
+                    <form action="/upload" id="file-submit" method="post" enctype="multipart/form-data">
+
+                        <div class="file is-info">
+                            <label class="file-label">
+                                <input class="file-input" type="file" name="name">
+                                <span class="file-cta">
+                                    <span class="file-label">
+                                        Upload file
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+
+                    </form>
+
+                </div>
+                <div class="column" style="margin-bottom:32px;">
+                    <div class="level is-mobile">
+                        <progress class="progress is-success is-medium is-marginless storage-bar" value="0" max="100"></progress>
+                        <p class="has-text-centered storage-total" style="font-weight:bold;min-width:120px;margin-left:12px;"></p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="container">
+
+            <table class="table is-fullwidth" id="file_list">
+                <tr>
+                    <th>Filename</th>
+                    <th class="has-text-centered" style="width:104px;">Actions</th>
+                </tr>
+            </table>
+
+        </div>
+
+    </section>
+
+    <section id="file-edit" class="section flex flex-child">
+        
+        <div class="container flex flex-child">
+
+            <div class="field flex flex-child" style="margin-bottom:36px;">
+                <div class="control flex flex-child">
+                    <textarea id="code" class="flex-child">
+                    </textarea>
+                </div>
+            </div>
+
+            <div class="field is-grouped">
+                <div class="control">
+                    <button id="save_button " class="button is-info">&#10004; Save</button>
+                </div>
+                <div class="control">
+                    <button id="back_button" class="button is-danger">&#10006; Discard</button>
+                </div>
+            </div>
+
+        </div>
+
+    </section>
+
+    <script>
+
+        var filename;
+
+        //main function
+        $(document).ready(function () {
+
+            refresh_file_list();
+            refresh_progress();
+            wifi_details();
+
+        });
+
+        //function to read wifi details
+        function wifi_details() {
+            $.getJSON("JSON/wifi_details", function (data) {
+                $('#ssid').val(data.ssid);
+                $('#password').val(data.pass);
+            });
+        }
+
+        //callback to store details
+        $(document).on('click', '#submit_button', function () {
+            $(this).addClass("is-loading");
+            $.post("JSON/wifi_update", { ssid: $('#ssid').val(), pass: $('#password').val() }).done(function () {
+                wifi_details();
+            })
+            $(this).removeClass("is-loading");
+        });
+
+        //callback to reset
+        $(document).on('click', '#reset_button', function () {
+            $(this).addClass("is-loading");
+            $.post("JSON/esp_restart").done(
+                alert('Please refresh the page in a few seconds')
+            );
+        });
+
+        //file upload button
+        $(document).on('click', '.file-cta', function () {
+            $(this).addClass('button is-loading');
+            document.body.onfocus = function () {
+                $('.file-cta').delay(8000).queue(function () { $('.file-cta').removeClass('button is-loading') });
+                document.body.onfocus = null;
+            }
+        });
+
+        $(document).on('change', '.file-input', function () {
+            $('.file-cta').clearQueue();
+            $('#file-submit').submit();
+        });
+
+        //callback to remove a file
+        $(document).on('click', '.file_list_remove', function () {
+            var this_cp = this;
+            $(this).addClass("is-loading");
+            $.post("JSON/file_list_remove", { filename: $(this).parent().prev().children("a").text() }).done(function () {
+                $(this_cp).parent().parent().remove();
+                refresh_progress();
+            })
+                .fail(function () {
+                    $(this_cp).removeClass("is-loading");
+                });
+        });
+
+        //edit a file
+        $(document).on('click', '.file_list_edit', function () {
+            var this_cp = this;
+            filename = $(this).parent().prev().children("a").text();
+            $(this).addClass("is-loading");
+            $.get(filename, function (data) {
+                $('#code').val(data);
+                $('.title').text("File Editor");
+                $('.subtitle').text("Editing " + filename );                
+                $('#code').scrollTop(0);
+                $('#file-list').hide();
+                $('#settings').hide();
+                $('#file-edit').css("display","flex");
+                $(this_cp).removeClass("is-loading");
+            });            
+        });
+
+        //update a file
+        $(document).on('click', '#save_button ', function () {
+            $(this).addClass("is-loading");
+            var this_cp = this;
+            var formData = new FormData();
+            var blob = new Blob([$('#code').val()], { type: 'text/plain' });
+            formData.append('name', blob, filename);
+
+            $.ajax({url: '/upload', method: 'post', data: formData, processData: false, contentType: false,
+            complete : function () {
+                //back_to_file_list();                 
+                //$(this_cp).removeClass("is-loading");
+                setTimeout(function() {document.location = "";}, 1000);                
+            }});      
+        });
+
+        $(document).on('click', '#back_button', function () {
+            back_to_file_list();                 
+        });
+
+        function back_to_file_list()
+        {
+            refresh_file_list();
+            refresh_progress();
+            $('#file-list').show();
+            $('#settings').show();
+            $('#file-edit').hide();
+            $('.title').text("Settings");
+            $('.subtitle').text("Change settings and manage files in the SPIFFS filesystem");   
+        }
+
+        //function to refresh the progressbar
+        function refresh_progress() {
+            $.getJSON("JSON/remaining_size", function (data) {
+                var used = Math.round(Number(data.used) / 1000);
+                var max = Math.round(Number(data.max) / 1000);
+                $('.storage-total').html(used + ' / ' + max + ' kB');
+                $('.storage-bar').attr('value', used / max * 100);
+                if ((used / max * 100) > 80)
+                    $('.storage-bar').addClass('is-danger').removeClass('is-success is-warning');
+                else if ((used / max * 100) > 70)
+                    $('.storage-bar').addClass('is-warning').removeClass('is-success is-danger');
+                else
+                    $('.storage-bar').addClass('is-success').removeClass('is-warning is-danger');
+            });
+        }
+
+        //function to refresh the file list
+        function refresh_file_list() {
+            $.getJSON("JSON/file_list", function (data) {
+                $("#file_list tr").not( ":first" ).remove();
+                var file_array = [];
+                var index=0;
+                $.each(data.files, function (key, item) {
+                    file_array[index]=item;                    
+                    index=index+1;
+                });
+                file_array = file_array.sort();
+                $.each(file_array, function (i, item) {
+                    $("#file_list").append('<tr><td style="vertical-align:middle;text-decoration:underline;"> \
+                            <a class="has-text-dark" href="' + item + '" download>' + item + '</a></td> \
+                            <td><a class="file_list_edit button is-info" style="width:36px;">&#9998;</a> \
+                            <a class="file_list_remove button is-danger" style="width:36px;">&#10006;</a></td></tr>');
+                });
+            });
+        }
+
+    </script>
+
+</body>
+
+</html>
