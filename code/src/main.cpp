@@ -10,7 +10,7 @@
 
 unsigned long prev_time_task;
 
-#define NUMBLOCKS 48
+#define NUMBLOCKS 49
 #define NUMTICKS 48
 
 Adafruit_NeoPixel blocks(NUMBLOCKS, D6, NEO_GRB + NEO_KHZ800);
@@ -62,11 +62,11 @@ void setup()
 
     blocks.begin();
     blocks.show();
-    blocks.setBrightness(30);
+    // blocks.setBrightness(30);
 
     ticks.begin();
     ticks.show();
-    ticks.setBrightness(30);
+    // ticks.setBrightness(30);
 
     Serial.print("Setup duration: ");
     Serial.print(millis()-start_time);
@@ -88,13 +88,24 @@ void loop()
         //do task
         for (int i = 0; i < NUMBLOCKS; i++)
         {
-            blocks.setPixelColor(i, blocks.Color(200*(k>i), 0, 75));
+            // blocks.setPixelColor(i, blocks.Color(200*(k>i), 0, 75));
+            // if (i==21)
+            // {
+            //     blocks.setPixelColor(i, blocks.Color(20, 0, 0));
+            // }
+            // else
+            // {
+            //     blocks.setPixelColor(i, blocks.Color(20, 20, 10));
+            // }
+
+            blocks.setPixelColor(i, blocks.Color(random(0, 00), random(0, 40), random(0, 40)));
             blocks.show();
         }
 
         for (int i = 0; i < NUMTICKS; i++)
         {
-            ticks.setPixelColor(i, ticks.Color(0, 200 * (k > i), 75));
+            ticks.setPixelColor(i, ticks.Color(random(0, 40), random(0, 00), random(0, 00)));
+            // ticks.setPixelColor(i, ticks.Color(30, 100 * (k > i), 0));
             ticks.show();
         }
 
