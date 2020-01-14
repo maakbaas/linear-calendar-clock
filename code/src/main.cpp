@@ -112,14 +112,14 @@ void loop()
         String payload;
         if (http.GET() > 0)
         {
-            payload = http.getString();          
+            payload = http.getString();
+
+            String hours = payload.substring(0, 2);
+            String mins = payload.substring(2, 4);
+            time_rainbow(hours.toInt(), mins.toInt());
         }
 
         http.end();
-
-        time_rainbow(payload.substring(0, 1).toInt(), payload.substring(2, 3).toInt());
-
-        // time_rainbow(24,0);
 
         ticks.show();
         blocks.show();
