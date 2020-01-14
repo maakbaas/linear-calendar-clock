@@ -84,6 +84,9 @@ void setup()
     Serial.println("");
 
     prev_time_task = millis();
+
+    //https://mb-clock.netlify.com/.netlify/functions/clock
+
     
 }
 
