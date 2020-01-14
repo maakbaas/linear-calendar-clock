@@ -1,5 +1,5 @@
 #include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h>
+//#include <ESP8266mDNS.h>
 #include <ArduinoOTA.h>
 #include <FS.h>
 #include <Adafruit_NeoPixel.h>
@@ -7,6 +7,11 @@
 #include "ajax.h"
 #include "esp_server.h"
 #include "nvm.h"
+
+#include <ESP8266HTTPClient.h>
+
+WiFiClientSecure client_ssl;
+HTTPClient http;
 
 unsigned long prev_time_task;
 
@@ -20,6 +25,8 @@ void ticks_time(int hours, int minutes, int r, int g, int b);
 
 Adafruit_NeoPixel blocks(NUMBLOCKS, 4, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel ticks(NUMTICKS, 12, NEO_GRB + NEO_KHZ800);
+
+bool start = true;
 
 void setup()
 {
@@ -40,6 +47,9 @@ void setup()
     ticks.show();
 
     int start_time = millis();
+
+    client_ssl.setInsecure();
+
     Serial.begin(115200);    
     
     pinMode(0, INPUT_PULLUP); 
@@ -77,16 +87,13 @@ void setup()
     server_begin();
     ajax_begin();
 
-    MDNS.begin("display");
+    //MDNS.begin("display");
     
     Serial.print("Setup duration: ");
     Serial.print(millis()-start_time);
     Serial.println("");
 
-    prev_time_task = millis();
-
-    //https://mb-clock.netlify.com/.netlify/functions/clock
-
+    prev_time_task = 0;
     
 }
 
@@ -95,11 +102,24 @@ void loop()
     ArduinoOTA.handle();
     
     //100ms task, priority 1
-    if (millis()-prev_time_task>60000)
-    {
+    if (millis()-prev_time_task>60000 || start)
+    {        
         prev_time_task = millis();
-                
-        time_rainbow(21,30);
+        start = false;
+
+        http.begin(client_ssl, "https://mb-clock.netlify.com/.netlify/functions/clock");
+
+        String payload;
+        if (http.GET() > 0)
+        {
+            payload = http.getString();          
+        }
+
+        http.end();
+
+        // time_rainbow(payload.substring(0, 1).toInt(), payload.substring(2, 3).toInt());
+
+        time_rainbow(24,0);
 
         ticks.show();
         blocks.show();
