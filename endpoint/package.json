@@ -1,0 +1,11 @@
+{
+  "name": "endpoint",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/clock.js",
+  "scripts": {
+    "build": "rm -rf dist && rm -rf functions && cp -r src/functions functions && mkdir dist"
+  },
+  "author": "",
+  "license": "ISC"
+}
