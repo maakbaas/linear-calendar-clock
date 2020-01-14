@@ -10,16 +10,35 @@
 
 unsigned long prev_time_task;
 
-#define NUMBLOCKS 49
-#define NUMTICKS 48
+#define NUMBLOCKS 48
+#define NUMTICKS 49
 
-Adafruit_NeoPixel blocks(NUMBLOCKS, D6, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoPixel ticks(NUMTICKS, D2, NEO_GRB + NEO_KHZ800);
+void time(int hours, int minutes);
+void time_rainbow(int hours, int minutes);
+void daylight(int hours, int minutes);
+void ticks_time(int hours, int minutes, int r, int g, int b);
 
-int k=0;
+Adafruit_NeoPixel blocks(NUMBLOCKS, 4, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel ticks(NUMTICKS, 12, NEO_GRB + NEO_KHZ800);
 
 void setup()
 {
+    blocks.begin();
+    ticks.begin();
+
+    for (int i = 0; i < NUMBLOCKS; i++)
+    {
+        blocks.setPixelColor(i, blocks.Color(6,5,4));        
+    }
+
+    for (int i = 0; i < NUMTICKS; i++)
+    {
+        ticks.setPixelColor(i, ticks.Color(6, 5, 4));        
+    }
+
+    blocks.show();
+    ticks.show();
+
     int start_time = millis();
     Serial.begin(115200);    
     
@@ -59,15 +78,7 @@ void setup()
     ajax_begin();
 
     MDNS.begin("display");
-
-    blocks.begin();
-    blocks.show();
-    // blocks.setBrightness(30);
-
-    ticks.begin();
-    ticks.show();
-    // ticks.setBrightness(30);
-
+    
     Serial.print("Setup duration: ");
     Serial.print(millis()-start_time);
     Serial.println("");
@@ -81,38 +92,77 @@ void loop()
     ArduinoOTA.handle();
     
     //100ms task, priority 1
-    if (millis()-prev_time_task>100)
+    if (millis()-prev_time_task>60000)
     {
         prev_time_task = millis();
-        
-        //do task
-        for (int i = 0; i < NUMBLOCKS; i++)
-        {
-            // blocks.setPixelColor(i, blocks.Color(200*(k>i), 0, 75));
-            // if (i==21)
-            // {
-            //     blocks.setPixelColor(i, blocks.Color(20, 0, 0));
-            // }
-            // else
-            // {
-            //     blocks.setPixelColor(i, blocks.Color(20, 20, 10));
-            // }
+                
+        time_rainbow(21,30);
 
-            blocks.setPixelColor(i, blocks.Color(random(0, 00), random(0, 40), random(0, 40)));
-            blocks.show();
-        }
+        ticks.show();
+        blocks.show();
 
-        for (int i = 0; i < NUMTICKS; i++)
-        {
-            ticks.setPixelColor(i, ticks.Color(random(0, 40), random(0, 00), random(0, 00)));
-            // ticks.setPixelColor(i, ticks.Color(30, 100 * (k > i), 0));
-            ticks.show();
-        }
-
-        if (k<48)
-            k++;
-        else
-            k=0;
     }
 
+}
+
+void time(int hours, int minutes)
+{
+    float floatHours = (hours + (float)minutes / 60) * 2;
+
+    ticks_time(hours, minutes, 22, 16, 10);
+
+    for (int i = 0; i < NUMBLOCKS; i++)
+    {
+        if (i + 1 <= floatHours)
+            blocks.setPixelColor(i, blocks.Color(30, 30, 0));
+        else if (i + 1 == ceil(floatHours) && minutes % 30 >= 15)
+            blocks.setPixelColor(i, blocks.Color(60, 30, 0));
+        else 
+            blocks.setPixelColor(i, blocks.Color(0, 0, 0));
+    }
+}
+
+void time_rainbow(int hours, int minutes)
+{
+    float floatHours = (hours + (float)minutes / 60) * 2;
+
+    ticks_time(hours, minutes, 22, 16, 10);
+
+    for (int i = 0; i < NUMBLOCKS; i++)
+    {
+        if (i + 1 <= floatHours)
+            blocks.setPixelColor(i, blocks.ColorHSV(i*1365,255,30));       
+        else
+            blocks.setPixelColor(i, blocks.Color(0, 0, 0));
+    }
+}
+
+void daylight(int hours, int minutes)
+{
+    float floatHours = (hours + (float)minutes / 60) * 2;
+
+    ticks_time(hours, minutes, 20, 0, 5);
+
+    for (int i = 0; i < NUMBLOCKS; i++)
+    {
+        if (i + 1 <= floatHours)
+            blocks.setPixelColor(i, blocks.ColorHSV(i * 1365, 255, 30));
+        else
+            blocks.setPixelColor(i, blocks.Color(0, 0, 0));
+    }
+}
+
+void ticks_time(int hours, int minutes, int r, int g, int b)
+{
+    float floatHours = (hours + (float)minutes / 60) * 2;
+
+    for (int i = 0; i < NUMTICKS; i++)
+    {
+        if (i+1 <= floatHours)
+            ticks.setPixelColor(i, ticks.Color(22, 16, 10));
+        else if (i <= floatHours)
+            ticks.setPixelColor(i, ticks.Color(r, g, b));
+        else
+            ticks.setPixelColor(i, ticks.Color(9, 7, 5));
+    }
 }
