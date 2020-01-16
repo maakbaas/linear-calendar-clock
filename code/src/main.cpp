@@ -21,8 +21,9 @@ unsigned long prev_time_task;
 void time();
 void time_rainbow();
 void calendar();
+void daylight();
 void goal(int percent);
-void ticks_time(int hours, int minutes, int r, int g, int b);
+void ticks_time(int hours, int minutes, int r, int g, int b, int width);
 
 Adafruit_NeoPixel blocks(NUMBLOCKS, 4, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel ticks(NUMTICKS, 12, NEO_GRB + NEO_KHZ800);
@@ -103,14 +104,15 @@ void loop()
     ArduinoOTA.handle();
     
     //main task, priority 1
-    if (millis()-prev_time_task>30000 || start)
+    if (millis()-prev_time_task>2000 || start)
     {        
         prev_time_task = millis();
         start = false;
 
         // calendar();
         // time_rainbow();
-        goal(68);
+        // goal(68);
+        daylight();
     }
 
 }
@@ -130,7 +132,7 @@ void time()
 
         float floatHours = (hours + (float)minutes / 60) * 2;
 
-        ticks_time(hours, minutes, 22, 16, 10);
+        ticks_time(hours, minutes, 22, 16, 10, hours*2);
 
         for (int i = 0; i < NUMBLOCKS; i++)
         {
@@ -164,7 +166,7 @@ void time_rainbow()
 
         float floatHours = (hours + (float)minutes / 60) * 2;
 
-        ticks_time(hours, minutes, 22, 16, 10);
+        ticks_time(hours, minutes, 22, 16, 10, hours * 2);
 
         for (int i = 0; i < NUMBLOCKS; i++)
         {
@@ -194,7 +196,7 @@ void calendar()
         int hours = payload.substring(0, 2).toInt();
         int minutes = payload.substring(2, 4).toInt();
 
-        ticks_time(hours, minutes, 44, 32, 20);
+        ticks_time(hours, minutes, 44, 32, 20, hours * 2);
         // ticks_time(hours, minutes, 30, 30, 0);
         ticks.show();
     }
@@ -224,6 +226,61 @@ void calendar()
     http.end();
 }
 
+//show the daylight
+void daylight()
+{
+    String payload;
+    http.begin(client_ssl, "https://mb-clock.netlify.com/.netlify/functions/daylight");
+
+    if (http.GET() == HTTP_CODE_OK)
+    {
+        payload = http.getString();
+
+        for (int i = 0; i < NUMBLOCKS; i++)
+        {
+            //color for twilight gradient
+            if (payload.substring(i, i + 1).toInt() == 1)
+                blocks.setPixelColor(i, blocks.Color(9,4, 11));
+            else if (payload.substring(i, i + 1).toInt() == 2)
+                blocks.setPixelColor(i, blocks.Color(13,8, 16));
+            else if (payload.substring(i, i + 1).toInt() == 3)
+                blocks.setPixelColor(i, blocks.Color(20,15,25));            
+            else
+                blocks.setPixelColor(i, blocks.Color(5, 0, 6));
+        }
+
+        blocks.show();
+    }
+
+    http.end();
+
+    String payload2;
+    http.begin(client_ssl, "https://mb-clock.netlify.com/.netlify/functions/clock");
+
+    if (http.GET() == HTTP_CODE_OK)
+    {
+        payload2 = http.getString();
+
+        int hours = payload2.substring(0, 2).toInt();
+        int minutes = payload2.substring(2, 4).toInt();
+
+        int bars = (hours + (float)minutes / 60) * 2;
+
+        if (payload.substring(bars, bars + 1).toInt() == 1)
+            ticks_time(hours, minutes, 65, 25, 15, 8);
+        else if (payload.substring(bars, bars + 1).toInt() == 2)
+            ticks_time(hours, minutes, 65, 25, 15, 8);
+        else if (payload.substring(bars, bars + 1).toInt() == 3)
+            ticks_time(hours, minutes, 60, 35, 10, 8);
+        else
+            ticks_time(hours, minutes, 44, 32, 20, hours*2);
+
+        ticks.show();
+    }
+
+    http.end();
+}
+
 //goal tracker between 0 and 100%
 void goal(int percent)
 {
@@ -247,7 +304,7 @@ void goal(int percent)
 }
 
 //support function for ticks
-void ticks_time(int hours, int minutes, int r, int g, int b)
+void ticks_time(int hours, int minutes, int r, int g, int b, int width)
 {
     float floatHours = (hours + (float)minutes / 60) * 2;
 
@@ -255,9 +312,9 @@ void ticks_time(int hours, int minutes, int r, int g, int b)
     {
         if (i+1 <= floatHours)
         {
-            int gradR = 11 + max(0, int((floatHours - (floatHours - i)) * (r - 11) / floatHours));
-            int gradG = 8 + max(0, int((floatHours - (floatHours - i)) * (g - 8) / floatHours));
-            int gradB = 5 + max(0, int((floatHours - (floatHours - i)) * (b - 5) / floatHours));
+            int gradR = 11 + max(0, int((width - (floatHours - i)) * (r - 11) / (float)width));
+            int gradG = 8 + max(0, int((width - (floatHours - i)) * (g - 8) / (float)width));
+            int gradB = 5 + max(0, int((width - (floatHours - i)) * (b - 5) / (float)width));
             ticks.setPixelColor(i, ticks.Color(gradR, gradG, gradB));
         }
         else if (i <= floatHours)
