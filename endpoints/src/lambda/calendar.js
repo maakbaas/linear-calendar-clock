@@ -27,28 +27,28 @@ const Authorize = async () => {
 }
 
 const getEvents = async ({date = null }) => {
-    let _query = {
-        calendarId: CALENDAR_ID,
-        timeMin: (new Date()).toISOString(),
-        maxResults: 100,
-        singleEvents: true,
-        orderBy: 'startTime'
-    }
-
-    _query.timeMin = `${date.replace(/\"/g, '')}T05:00:00.000Z`
-    _query.timeMax = `${date.replace(/\"/g, '')}T23:30:00-05:00`
-    _query.maxResults = 100 || 1    
-
+    
+    var response = '000000000000000000000000000000000000000000000000';
     const calendar = await Authorize()
 
-    return await calendar.events.list(_query)
-}
+    const list = await calendar.calendarList.list()
 
-exports.handler = (event, context, callback) => {
+    for (var n = 0; n < list.data.items.length; n++)
+    {
+        let _query = {
+            calendarId: list.data.items[n].id,
+            timeMin: (new Date()).toISOString(),
+            maxResults: 100,
+            singleEvents: true,
+            orderBy: 'startTime'
+        }
 
-    let date = moment.utc().add(1, 'hour').format('YYYY-MM-DD');  
+        _query.timeMin = `${date.replace(/\"/g, '')}T05:00:00.000Z`
+        _query.timeMax = `${date.replace(/\"/g, '')}T23:30:00-05:00`
+        _query.maxResults = 100 || 1   
 
-    getEvents({ date }).then(res => {
+        const res = await calendar.events.list(_query)
+
         const events = res.data.items
         const calEvents = {
             success: true,
@@ -69,39 +69,42 @@ exports.handler = (event, context, callback) => {
                 summary: event.summary || '',
                 description: event.description || ''
             }))
-            return calEvents
         } else {
             calEvents.events = "none"
-            return calEvents
         }
-    })
-        .then(res => {
 
-            var response ='000000000000000000000000000000000000000000000000';
-            if (res.events!="none")
-            {
-                for (var i=0; i<Object.keys(res.events).length; i++)
-                {
-                    var starttime = moment.utc(res.events[i].start).add(1, 'hour');
-                    var stoptime = moment.utc(res.events[i].end).add(1, 'hour');
-                    starttime = parseFloat(starttime.format('HH')) + parseFloat(starttime.format('mm')) / 60;
-                    stoptime = parseFloat(stoptime.format('HH')) + parseFloat(stoptime.format('mm')) / 60;
+        if (calEvents.events != "none") {
+            for (var i = 0; i < Object.keys(calEvents.events).length; i++) {
+                var starttime = moment.utc(calEvents.events[i].start).add(1, 'hour');
+                var stoptime = moment.utc(calEvents.events[i].end).add(1, 'hour');
+                starttime = parseFloat(starttime.format('HH')) + parseFloat(starttime.format('mm')) / 60;
+                stoptime = parseFloat(stoptime.format('HH')) + parseFloat(stoptime.format('mm')) / 60;
 
-                    for (var j=0; j<48; j++)
-                    {
-                       //still need to adapt for multiday appointments
-                       if ( (starttime >= (j/2) && starttime < ((j+1)/2)) || //startindex in window
-                           (stoptime > (j / 2) && stoptime <= ((j + 1) / 2)) || //stopindex in window
-                           (starttime < (j / 2) && stoptime > (j / 2)))
-                           response = response.substr(0, j) + '1' + response.substr(j+1);
-                    }
-
+                for (var j = 0; j < 48; j++) {
+                    //still need to adapt for multiday appointments
+                    if ((starttime >= (j / 2) && starttime < ((j + 1) / 2)) || //startindex in window
+                        (stoptime > (j / 2) && stoptime <= ((j + 1) / 2)) || //stopindex in window
+                        (starttime < (j / 2) && stoptime > (j / 2)))
+                        response = response.substr(0, j) + (n+1).toString() + response.substr(j + 1);
                 }
+
             }
+        }
+
+    }    
+
+    return response
+}
+
+exports.handler = (event, context, callback) => {
+
+    let date = moment.utc().add(1, 'hour').format('YYYY-MM-DD');  
+
+    getEvents({ date }).then(res => {            
 
             callback(null, {
                 statusCode: 200,
-                body: response
+                body: res
             })
         })
         .catch(e => {
