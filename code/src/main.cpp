@@ -18,9 +18,9 @@ unsigned long prev_time_task;
 #define NUMBLOCKS 48
 #define NUMTICKS 49
 
-void time(int hours, int minutes);
-void time_rainbow(int hours, int minutes);
-void daylight(int hours, int minutes);
+void time();
+void time_rainbow();
+void calendar();
 void ticks_time(int hours, int minutes, int r, int g, int b);
 
 Adafruit_NeoPixel blocks(NUMBLOCKS, 4, NEO_GRB + NEO_KHZ800);
@@ -102,78 +102,116 @@ void loop()
     ArduinoOTA.handle();
     
     //100ms task, priority 1
-    if (millis()-prev_time_task>10000 || start)
+    if (millis()-prev_time_task>30000 || start)
     {        
         prev_time_task = millis();
         start = false;
 
-        http.begin(client_ssl, "https://mb-clock.netlify.com/.netlify/functions/clock");
+        calendar();
+    }
 
-        String payload;
-        if (http.GET() == HTTP_CODE_OK)
+}
+
+void time()
+{
+    http.begin(client_ssl, "https://mb-clock.netlify.com/.netlify/functions/clock");
+
+    String payload;
+    if (http.GET() == HTTP_CODE_OK)
+    {
+        payload = http.getString();
+
+        int hours = payload.substring(0, 2).toInt();
+        int minutes = payload.substring(2, 4).toInt();
+
+        float floatHours = (hours + (float)minutes / 60) * 2;
+
+        ticks_time(hours, minutes, 22, 16, 10);
+
+        for (int i = 0; i < NUMBLOCKS; i++)
         {
-            payload = http.getString();
-
-            String hours = payload.substring(0, 2);
-            String mins = payload.substring(2, 4);
-            time_rainbow(hours.toInt(), mins.toInt());
-
-            ticks.show();
-            blocks.show();
-
+            if (i + 1 <= floatHours)
+                blocks.setPixelColor(i, blocks.Color(30, 30, 0));
+            else if (i + 1 == ceil(floatHours) && minutes % 30 >= 15)
+                blocks.setPixelColor(i, blocks.Color(60, 30, 0));
+            else
+                blocks.setPixelColor(i, blocks.Color(0, 0, 0));
         }
 
-        http.end();
-
+        ticks.show();
+        blocks.show();
     }
 
+    http.end();
 }
 
-void time(int hours, int minutes)
+void time_rainbow()
 {
-    float floatHours = (hours + (float)minutes / 60) * 2;
+    http.begin(client_ssl, "https://mb-clock.netlify.com/.netlify/functions/clock");
 
-    ticks_time(hours, minutes, 22, 16, 10);
-
-    for (int i = 0; i < NUMBLOCKS; i++)
+    String payload;
+    if (http.GET() == HTTP_CODE_OK)
     {
-        if (i + 1 <= floatHours)
-            blocks.setPixelColor(i, blocks.Color(30, 30, 0));
-        else if (i + 1 == ceil(floatHours) && minutes % 30 >= 15)
-            blocks.setPixelColor(i, blocks.Color(60, 30, 0));
-        else 
-            blocks.setPixelColor(i, blocks.Color(0, 0, 0));
+        payload = http.getString();
+
+        int hours = payload.substring(0, 2).toInt();
+        int minutes = payload.substring(2, 4).toInt();
+
+        float floatHours = (hours + (float)minutes / 60) * 2;
+
+        ticks_time(hours, minutes, 22, 16, 10);
+
+        for (int i = 0; i < NUMBLOCKS; i++)
+        {
+            if (i + 1 <= floatHours)
+                blocks.setPixelColor(i, blocks.ColorHSV(i * 1365, 255, 30));
+            else
+                blocks.setPixelColor(i, blocks.Color(0, 0, 0));
+        }
+
+        ticks.show();
+        blocks.show();
     }
+
+    http.end();    
 }
 
-void time_rainbow(int hours, int minutes)
+void calendar()
 {
-    float floatHours = (hours + (float)minutes / 60) * 2;
+    http.begin(client_ssl, "https://mb-clock.netlify.com/.netlify/functions/clock");
 
-    ticks_time(hours, minutes, 22, 16, 10);
-
-    for (int i = 0; i < NUMBLOCKS; i++)
+    String payload;
+    if (http.GET() == HTTP_CODE_OK)
     {
-        if (i + 1 <= floatHours)
-            blocks.setPixelColor(i, blocks.ColorHSV(i*1365,255,30));       
-        else
-            blocks.setPixelColor(i, blocks.Color(0, 0, 0));
+        payload = http.getString();
+
+        int hours = payload.substring(0, 2).toInt();
+        int minutes = payload.substring(2, 4).toInt();
+
+        ticks_time(hours, minutes, 30, 0, 5);
+        ticks.show();
     }
-}
 
-void daylight(int hours, int minutes)
-{
-    float floatHours = (hours + (float)minutes / 60) * 2;
+    http.end();
 
-    ticks_time(hours, minutes, 20, 0, 5);
+    http.begin(client_ssl, "https://mb-clock.netlify.com/.netlify/functions/calendar");
 
-    for (int i = 0; i < NUMBLOCKS; i++)
+    if (http.GET() == HTTP_CODE_OK)
     {
-        if (i + 1 <= floatHours)
-            blocks.setPixelColor(i, blocks.ColorHSV(i * 1365, 255, 30));
-        else
-            blocks.setPixelColor(i, blocks.Color(0, 0, 0));
+        payload = http.getString();
+
+        for (int i=0; i<NUMBLOCKS; i++)
+        {
+            if (payload.substring(i, i+1).toInt()==1)
+                blocks.setPixelColor(i, blocks.Color(5, 20, 20));
+            else
+                blocks.setPixelColor(i, blocks.Color(0, 0, 0));
+        }
+
+        blocks.show();
     }
+
+    http.end();
 }
 
 void ticks_time(int hours, int minutes, int r, int g, int b)
