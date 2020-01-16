@@ -82,8 +82,8 @@ exports.handler = (event, context, callback) => {
             {
                 for (var i=0; i<Object.keys(res.events).length; i++)
                 {
-                    var starttime = moment(res.events[i].start);
-                    var stoptime = moment(res.events[i].end);
+                    var starttime = moment.utc(res.events[i].start).add(1, 'hour');
+                    var stoptime = moment.utc(res.events[i].end).add(1, 'hour');
                     starttime = parseFloat(starttime.format('HH')) + parseFloat(starttime.format('mm')) / 60;
                     stoptime = parseFloat(stoptime.format('HH')) + parseFloat(stoptime.format('mm')) / 60;
 
