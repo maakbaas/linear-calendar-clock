@@ -102,7 +102,7 @@ void loop()
     ArduinoOTA.handle();
     
     //100ms task, priority 1
-    if (millis()-prev_time_task>60000 || start)
+    if (millis()-prev_time_task>10000 || start)
     {        
         prev_time_task = millis();
         start = false;
@@ -110,19 +110,20 @@ void loop()
         http.begin(client_ssl, "https://mb-clock.netlify.com/.netlify/functions/clock");
 
         String payload;
-        if (http.GET() > 0)
+        if (http.GET() == HTTP_CODE_OK)
         {
             payload = http.getString();
 
             String hours = payload.substring(0, 2);
             String mins = payload.substring(2, 4);
             time_rainbow(hours.toInt(), mins.toInt());
+
+            ticks.show();
+            blocks.show();
+
         }
 
         http.end();
-
-        ticks.show();
-        blocks.show();
 
     }
 
@@ -186,6 +187,7 @@ void ticks_time(int hours, int minutes, int r, int g, int b)
         else if (i <= floatHours)
             ticks.setPixelColor(i, ticks.Color(r, g, b));
         else
-            ticks.setPixelColor(i, ticks.Color(9, 7, 5));
+            ticks.setPixelColor(i, ticks.Color(22, 16, 10));
+            //ticks.setPixelColor(i, ticks.Color(9, 7, 5));
     }
 }

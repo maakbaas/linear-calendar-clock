@@ -12,7 +12,9 @@ const REDIRECT_URI = process.env.REDIRECT_URI
 const TOKEN = {
     access_token: process.env.ACCESS_TOKEN,
     scope: "https://www.googleapis.com/auth/calendar.readonly",
-    token_type: "Bearer"
+    token_type: "Bearer",
+    refresh_token: process.env.REFRESH_TOKEN,
+    expiry_date: process.env.EXPIRY_DATE
 }
 
 const Authorize = async () => {
@@ -75,10 +77,26 @@ exports.handler = (event, context, callback) => {
     })
         .then(res => {
 
-            var response;
+            var response ='000000000000000000000000000000000000000000000000';
             if (res.events!="none")
             {
-                response = "there are events!"
+                for (var i=0; i<Object.keys(res.events).length; i++)
+                {
+                    var starttime = moment(res.events[i].start);
+                    var stoptime = moment(res.events[i].end);
+                    starttime = parseFloat(starttime.format('HH')) + parseFloat(starttime.format('mm')) / 60;
+                    stoptime = parseFloat(stoptime.format('HH')) + parseFloat(stoptime.format('mm')) / 60;
+
+                    for (var j=0; j<48; j++)
+                    {
+                       //still need to adapt for multiday appointments
+                       if ( (starttime >= (j/2) && starttime < ((j+1)/2)) || //startindex in window
+                           (stoptime > (j / 2) && stoptime <= ((j + 1) / 2)) || //stopindex in window
+                           (starttime < (j / 2) && stoptime > (j / 2)))
+                           response = response.substr(0, j) + '1' + response.substr(j+1);
+                    }
+
+                }
             }
 
             callback(null, {
