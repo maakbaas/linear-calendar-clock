@@ -112,7 +112,8 @@ void loop()
         // calendar();
         // time_rainbow();
         // goal(68);
-        daylight();
+        // daylight();
+        time();
     }
 
 }
@@ -191,7 +192,7 @@ void calendar()
     String payload;
     if (http.GET() == HTTP_CODE_OK)
     {
-        payload = http.getString();
+        payload = "1450";//http.getString();
 
         int hours = payload.substring(0, 2).toInt();
         int minutes = payload.substring(2, 4).toInt();
@@ -244,7 +245,7 @@ void daylight()
             else if (payload.substring(i, i + 1).toInt() == 2)
                 blocks.setPixelColor(i, blocks.Color(13,8, 16));
             else if (payload.substring(i, i + 1).toInt() == 3)
-                blocks.setPixelColor(i, blocks.Color(20,15,25));            
+                blocks.setPixelColor(i, blocks.Color(25,19,33));            
             else
                 blocks.setPixelColor(i, blocks.Color(5, 0, 6));
         }
@@ -267,13 +268,13 @@ void daylight()
         int bars = (hours + (float)minutes / 60) * 2;
 
         if (payload.substring(bars, bars + 1).toInt() == 1)
-            ticks_time(hours, minutes, 65, 25, 15, 8);
+            ticks_time(hours, minutes, 65, 25, 15, 16);
         else if (payload.substring(bars, bars + 1).toInt() == 2)
-            ticks_time(hours, minutes, 65, 25, 15, 8);
+            ticks_time(hours, minutes, 65, 25, 15, 16);
         else if (payload.substring(bars, bars + 1).toInt() == 3)
-            ticks_time(hours, minutes, 60, 35, 10, 8);
+            ticks_time(hours, minutes, 60, 30, 10, 16);
         else
-            ticks_time(hours, minutes, 44, 32, 20, hours*2);
+            ticks_time(hours, minutes, 44, 32, 20, 16);
 
         ticks.show();
     }
