@@ -104,7 +104,7 @@ void loop()
     ArduinoOTA.handle();
     
     //main task, priority 1
-    if (millis()-prev_time_task>2000 || start)
+    if (millis()-prev_time_task>60000 || start)
     {        
         prev_time_task = millis();
         start = false;
