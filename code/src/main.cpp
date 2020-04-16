@@ -121,7 +121,7 @@ void loop()
 //show the time as a green bar with 15min accuracy by using a yellow bar for quarters
 void time()
 {
-    http.begin(client_ssl, "https://mb-clock.netlify.com/.netlify/functions/clock");
+    http.begin(client_ssl, "https://mb-clock.netlify.app/.netlify/functions/clock");
 
     String payload;
     if (http.GET() == HTTP_CODE_OK)
@@ -155,7 +155,7 @@ void time()
 //show the time as a rainbow bar
 void time_rainbow()
 {
-    http.begin(client_ssl, "https://mb-clock.netlify.com/.netlify/functions/clock");
+    http.begin(client_ssl, "https://mb-clock.netlify.app/.netlify/functions/clock");
 
     String payload;
     if (http.GET() == HTTP_CODE_OK)
@@ -187,7 +187,7 @@ void time_rainbow()
 //show the calendar
 void calendar()
 {
-    http.begin(client_ssl, "https://mb-clock.netlify.com/.netlify/functions/clock");
+    http.begin(client_ssl, "https://mb-clock.netlify.app/.netlify/functions/clock");
 
     String payload;
     if (http.GET() == HTTP_CODE_OK)
@@ -204,7 +204,7 @@ void calendar()
 
     http.end();
 
-    http.begin(client_ssl, "https://mb-clock.netlify.com/.netlify/functions/calendar");
+    http.begin(client_ssl, "https://mb-clock.netlify.app/.netlify/functions/calendar");
 
     if (http.GET() == HTTP_CODE_OK)
     {
@@ -231,7 +231,7 @@ void calendar()
 void daylight()
 {
     String payload;
-    http.begin(client_ssl, "https://mb-clock.netlify.com/.netlify/functions/daylight");
+    http.begin(client_ssl, "https://mb-clock.netlify.app/.netlify/functions/daylight");
 
     if (http.GET() == HTTP_CODE_OK)
     {
@@ -256,7 +256,7 @@ void daylight()
     http.end();
 
     String payload2;
-    http.begin(client_ssl, "https://mb-clock.netlify.com/.netlify/functions/clock");
+    http.begin(client_ssl, "https://mb-clock.netlify.app/.netlify/functions/clock");
 
     if (http.GET() == HTTP_CODE_OK)
     {
